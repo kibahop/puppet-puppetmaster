@@ -232,21 +232,21 @@ class puppetmaster::lcm
   $foreman_puppetdb_dashboard_address       = "http://${facts['fqdn']}:8080/pdb/dashboard"
   $foreman_puppetdb_address                 = "https://${facts['fqdn']}:8081/v2/commands"
   $puppetdb_server                          = $facts['fqdn']
-  $foreman_proxy_registered_name            = 'puppet.local'
+  $foreman_proxy_registered_name            = "https://${facts['fqdn']}"
   $foreman_proxy_repo                       = '1.20'
   $foreman_proxy_version                    = '1.20.1'
   $foreman_proxy_bind_host                  = '0.0.0.0'
   $foreman_proxy_register_in_foreman        = true
-  $foreman_proxy_registered_proxy_url       = 'https://puppet.local:8443'
+  $foreman_proxy_registered_proxy_url       = "https://${facts['fqdn']}:8443"
   $foreman_proxy_ensure_packages_version    = 'installed'
-  $foreman_proxy_template_url               = 'http://puppet.local:8000'
+  $foreman_proxy_template_url               = "https://${facts['fqdn']}:8000"
   $foreman_proxy_manage_sudoersd            = true
   $foreman_proxy_use_sudoers                = true
   $foreman_proxy_use_sudoersd               = true
   # puppet
   $foreman_proxy_puppet                     = true
   $foreman_proxy_autosignfile               = '/etc/puppetlabs/puppet/autosign.conf'
-  $foreman_proxy_puppet_url                 = 'https://puppet.local:8140'
+  $foreman_proxy_puppet_url                 = "https://${facts['fqdn']}:8140'"
   $foreman_proxy_puppet_use_environment_api = true
   $foreman_proxy_puppet_use_cache           = true
   # puppetca settings
