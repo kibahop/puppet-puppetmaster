@@ -15,8 +15,6 @@
 #
 # $puppetdb_database_password:: Puppetdb database password
 #
-# $primary_names:: Primary names for this machine. Example: ['puppet.local', 'puppet' ]
-#
 # $timezone:: The timezone the server wants to be located in. Example: 'Europe/Helsinki' or 'Etc/UTC'. Defaults to 'Etc/UTC'
 #
 # $control_repo:: Enable control repo. You MUST also set up $provider, $repo_url, $key_path and $repo_host
@@ -68,17 +66,11 @@
 #
 # Foreman Proxy parameters
 #
-# $foreman_proxy_foreman_base_url:: The foreman URL the proxy wants to talk to 
-#
 # $foreman_proxy_templates:: Enable support for templates
-#
-# $foreman_proxy_templates_listen_on:: Adress to listen on for templates
 #
 # $foreman_proxy_trusted_hosts:: The hosts the proxy allows to talk
 #
 # $foreman_proxy_dhcp:: Enable support for dhcp
-#
-# $foreman_proxy_dhcp_listen_on:: Addresses to listen on for DHCP
 #
 # $foreman_proxy_dns:: Enable support for DNS
 #
@@ -110,8 +102,6 @@
 #
 # $foreman_proxy_dns_interface:: The dns interface(s) to listen on
 #
-# $foreman_proxy_dns_listen_on:: https, http, or both 
-#
 # $foreman_proxy_dns_provider:: DNS provider
 #
 # $foreman_proxy_dns_zone:: DNS zone name
@@ -130,11 +120,7 @@
 #
 # $foreman_proxy_tftp_manage_wget:: If enabled will install the wget package
 #
-# $foreman_proxy_tftp_listen_on:: TFTP proxy to listen on https, http, or both
-#
 # $foreman_proxy_bmc:: Enable BMC feature
-#
-# $foreman_proxy_bmc_listen_on:: BMC proxy to listen on https, http, or both
 #
 # $foreman_proxy2_hostnames:: List of hostnames for additional smart proxy 2. Example [ 'foo2.example.com', 'foo2' ]
 #
@@ -157,6 +143,10 @@
 # $key_path:: The private key to use for accessing $repo_url. defaults to '/etc/puppetlabs/r10k/ssh/r10k_key'
 # 
 # $repo_host:: The fully qualified name of the $provider host. Example gitlab.com
+#
+# $autosign:: Set up autosign entries. Set to true to enable naive autosigning.
+#
+# $autosign_entries:: List of autosign entries. Requires that autosign is pointing to the path of autosign.conf.
 class puppetmaster::lcm
 (
   String $foreman_db_password,
@@ -165,7 +155,6 @@ class puppetmaster::lcm
   String $foreman_admin_email,
   String $foreman_admin_password,
   String $puppetdb_database_password,
-  Array[String] $primary_names,
   Boolean $foreman_plugin_cockpit                  = false,
   Boolean $foreman_compute_vmware                  = false,
   Boolean $foreman_compute_libvirt                 = false,
@@ -187,12 +176,9 @@ class puppetmaster::lcm
   Boolean $foreman_plugin_remote_execution         = false,
   Boolean $foreman_plugin_tasks                    = false,
   Boolean $foreman_plugin_templates                = false,
-  String $foreman_proxy_foreman_base_url           = undef,
   Boolean $foreman_proxy_templates                 = false,
-  String $foreman_proxy_templates_listen_on        = '',
   Array[String] $foreman_proxy_trusted_hosts       = [],
   Boolean $foreman_proxy_dhcp                      = false,
-  String $foreman_proxy_dhcp_listen_on             = '',
   Boolean $foreman_proxy_dns                       = false,
   Boolean $foreman_proxy_dhcp_managed              = false,
   String $foreman_proxy_dhcp_interface             = '',
@@ -208,7 +194,6 @@ class puppetmaster::lcm
   Boolean $foreman_proxy_dns_managed               = false,
   Array[String] $foreman_proxy_dns_forwarders      = [],
   String $foreman_proxy_dns_interface              = '',
-  String $foreman_proxy_dns_listen_on              = '',
   String $foreman_proxy_dns_provider               = '',
   String $foreman_proxy_dns_zone                   = '',
   String $foreman_proxy_dns_reverse                = '',
@@ -218,9 +203,7 @@ class puppetmaster::lcm
   Boolean $foreman_proxy_tftp_managed              = false,
   String $foreman_proxy_tftp_servername            = '',
   Boolean $foreman_proxy_tftp_manage_wget          = false,
-  String $foreman_proxy_tftp_listen_on             = '',
   Boolean $foreman_proxy_bmc                       = false,
-  String $foreman_proxy_bmc_listen_on              = '',
   Array[String] $foreman_proxy2_hostnames          = [],
   String $foreman_proxy2_ipaddress                 = '',
   Array[String] $foreman_proxy3_hostnames          = [],
@@ -231,25 +214,27 @@ class puppetmaster::lcm
   Boolean $manage_packetfilter                     = false,
   String $key_path                                 = '/etc/puppetlabs/r10k/ssh/r10k_key',
   Boolean $control_repo                            = false,
+  Variant[Boolean, String] $autosign = '/etc/puppetlabs/puppet/autosign.conf',
   Optional[Array[String]] $autosign_entries        = undef,
   Optional[Enum['gitlab']] $provider               = undef,
   Optional[String] $repo_url                       = undef,
   Optional[String] $repo_host                      = undef,
 )
 {
-  $foreman_version                          = '1.15.6'
-  $foreman_repo                             = '1.15'
+  $foreman_version                          = '1.20.1'
+  $foreman_repo                             = '1.20'
   $foreman_manage_memcached                 = true
   $foreman_memcached_max_memory             = '8%'
   $foreman_url                              = "https://${facts['fqdn']}"
+  $foreman_proxy_foreman_base_url           = $foreman_url
   $primary_names                            = unique([ "${facts['fqdn']}", "${facts['hostname']}", 'puppet', "puppet.${facts['domain']}" ])
   $foreman_serveraliases                    = $primary_names
   $foreman_puppetdb_dashboard_address       = "http://${facts['fqdn']}:8080/pdb/dashboard"
   $foreman_puppetdb_address                 = "https://${facts['fqdn']}:8081/v2/commands"
   $puppetdb_server                          = $facts['fqdn']
   $foreman_proxy_registered_name            = 'puppet.local'
-  $foreman_proxy_repo                       = '1.15'
-  $foreman_proxy_version                    = '1.15.6'
+  $foreman_proxy_repo                       = '1.20'
+  $foreman_proxy_version                    = '1.20.1'
   $foreman_proxy_bind_host                  = '0.0.0.0'
   $foreman_proxy_register_in_foreman        = true
   $foreman_proxy_registered_proxy_url       = 'https://puppet.local:8443'
@@ -275,17 +260,14 @@ class puppetmaster::lcm
   $foreman_proxy_mcollective_user           = root
   $foreman_proxy_puppetssh_sudo             = true
   $foreman_server_external_nodes            = '/etc/puppetlabs/puppet/node.rb'
+  $foreman_proxy_templates_listen_on        = 'both'
+  $foreman_proxy_dhcp_listen_on             = 'both'
+  $foreman_proxy_bmc_listen_on              = 'both'
+  $foreman_proxy_tftp_listen_on             = 'both'
+
 
   unless ($facts['osfamily'] == 'RedHat' and $facts['os']['release']['major'] == '7') {
     fail("${facts['os']['name']} ${facts['os']['release']['full']} not supported yet")
-  }
-
-  # See https://github.com/theforeman/puppet-foreman#foreman-version-compatibility-notes
-  if versioncmp($foreman_version, '1.17') < 0 {
-    $dynflow_in_core = false
-  }
-  else {
-    $dynflow_in_core = true
   }
 
   unless $facts['osfamily'] != 'RedHat' {
@@ -354,7 +336,8 @@ class puppetmaster::lcm
   class { '::puppetmaster::puppetdb':
     show_diff                  => true,
     server_foreman             => true,
-    autosign                   => '/etc/puppetlabs/puppet/autosign.conf',
+    autosign                   => $autosign,
+    autosign_entries           => $autosign_entries,
     server_reports             => 'store,foreman',
     puppetdb_database_password => $puppetdb_database_password,
     timezone                   => $timezone,
@@ -405,7 +388,7 @@ class puppetmaster::lcm
     initial_location      => 'Foreman Cloud',
     selinux               => true,
     unattended            => true,
-    dynflow_in_core       => $dynflow_in_core,
+    gpgcheck              => false,
   }
 
   if $foreman_compute_vmware {

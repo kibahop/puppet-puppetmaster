@@ -5,7 +5,7 @@ class puppetmaster::common
   Array[String]           $primary_names,
   String                  $timezone,
   Boolean                 $control_repo = false,
-  Optiona[Enum['gitlab']] $provider = undef,
+  Optional[Enum['gitlab']] $provider = undef,
   Optional[String]        $repo_url = undef,
   Optional[String]        $key_path = undef,
   Optional[String]        $repo_host = undef,
